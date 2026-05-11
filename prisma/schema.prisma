@@ -1,0 +1,233 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [postgis]
+}
+
+enum ProviderType {
+  individual
+  agency
+}
+
+enum ProviderStatus {
+  pending
+  active
+  suspended
+}
+
+enum VerificationStatus {
+  pending
+  approved
+  rejected
+}
+
+model City {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(50)
+  slug      String    @unique @db.VarChar(50)
+  lat       Float?
+  lng       Float?
+  isActive  Boolean   @default(true) @map("is_active")
+  districts District[]
+  providers ServiceProvider[]
+
+  @@map("city")
+}
+
+model District {
+  id         Int       @id @default(autoincrement())
+  cityId     Int       @map("city_id")
+  name       String    @db.VarChar(100)
+  level      String    @db.VarChar(20)
+  parentId   Int?      @map("parent_id")
+  slug       String    @db.VarChar(100)
+  lat        Float?
+  lng        Float?
+  geoPolygon String?   @map("geo_polygon") @db.Text
+  parent     District? @relation("DistrictToSubDistrict", fields: [parentId], references: [id])
+  children   District[] @relation("DistrictToSubDistrict")
+  city       City      @relation(fields: [cityId], references: [id])
+  providers  ServiceProvider[]
+
+  @@unique([cityId, slug])
+  @@index([parentId])
+  @@map("district")
+}
+
+model ServiceType {
+  id          Int              @id @default(autoincrement())
+  name        String           @db.VarChar(50)
+  slug        String           @unique @db.VarChar(50)
+  description String?          @db.Text
+  listings    ServiceListing[]
+  providers   ProviderServiceType[]
+
+  @@map("service_type")
+}
+
+model ProviderServiceType {
+  providerId     Int         @map("provider_id")
+  serviceTypeId  Int         @map("service_type_id")
+  provider       ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  serviceType    ServiceType     @relation(fields: [serviceTypeId], references: [id])
+
+  @@id([providerId, serviceTypeId])
+  @@map("provider_service_type")
+}
+
+model ServiceProvider {
+  id              Int       @id @default(autoincrement())
+  providerType    ProviderType @map("provider_type")
+  name            String    @db.VarChar(100)
+  slug            String    @unique @db.VarChar(150)
+  phone           String?   @db.VarChar(20)
+  wechatId        String?   @map("wechat_id") @db.VarChar(100)
+  avatarUrl       String?   @map("avatar_url") @db.VarChar(500)
+  bio             String?   @db.Text
+  yearsExperience Int?      @map("years_experience")
+  totalServed     Int       @default(0) @map("total_served")
+  avgRating       Float     @default(0) @map("avg_rating")
+  reviewCount     Int       @default(0) @map("review_count")
+  verified        Boolean   @default(false)
+  latitude        Float
+  longitude       Float
+  addressText     String?   @map("address_text") @db.VarChar(300)
+  districtId      Int?      @map("district_id")
+  cityId          Int       @map("city_id")
+  status          ProviderStatus @default(pending)
+  gender          String?   @db.VarChar(10)
+  age             Int?
+  metadata        Json?     @db.JsonB
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  city            City            @relation(fields: [cityId], references: [id])
+  district        District?       @relation(fields: [districtId], references: [id])
+  listings        ServiceListing[]
+  reviews         Review[]
+  verifications   Verification[]
+  photos          ProviderPhoto[]
+  serviceTypes    ProviderServiceType[]
+  favorites       Favorite[]
+  contactRequests ContactRequest[]
+
+  @@index([cityId, status])
+  @@index([districtId, avgRating(sort: Desc)])
+  @@index([providerType, districtId, status])
+  @@index([status])
+  @@map("service_provider")
+}
+
+model ServiceListing {
+  id            Int         @id @default(autoincrement())
+  providerId    Int         @map("provider_id")
+  serviceTypeId Int         @map("service_type_id")
+  title         String      @db.VarChar(200)
+  description   String?     @db.Text
+  price         Int?
+  priceUnit     String?     @map("price_unit") @db.VarChar(20)
+  priceNote     String?     @map("price_note") @db.VarChar(200)
+  isNegotiable  Boolean     @default(false) @map("is_negotiable")
+  isActive      Boolean     @default(true) @map("is_active")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  provider    ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  serviceType ServiceType     @relation(fields: [serviceTypeId], references: [id])
+
+  @@index([providerId])
+  @@index([serviceTypeId, isActive])
+  @@map("service_listing")
+}
+
+model Verification {
+  id           Int                @id @default(autoincrement())
+  providerId   Int                @map("provider_id")
+  verifyType   String             @map("verify_type") @db.VarChar(30)
+  fileUrl      String?            @map("file_url") @db.VarChar(500)
+  verifyStatus VerificationStatus @default(pending) @map("verify_status")
+  verifiedAt   DateTime?          @map("verified_at")
+  note         String?            @db.Text
+
+  provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@map("verification")
+}
+
+model ProviderPhoto {
+  id         Int      @id @default(autoincrement())
+  providerId Int      @map("provider_id")
+  url        String   @db.VarChar(500)
+  caption    String?  @db.VarChar(200)
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@map("provider_photo")
+}
+
+model User {
+  id           Int              @id @default(autoincrement())
+  openid       String?          @unique @db.VarChar(100)
+  nickname     String?          @db.VarChar(100)
+  avatarUrl    String?          @map("avatar_url") @db.VarChar(500)
+  phone        String?          @db.VarChar(20)
+  registeredAt DateTime         @default(now()) @map("registered_at")
+  reviews      Review[]
+  favorites    Favorite[]
+  contacts     ContactRequest[]
+
+  @@map("user")
+}
+
+model Review {
+  id                Int      @id @default(autoincrement())
+  providerId        Int      @map("provider_id")
+  userId            Int      @map("user_id")
+  rating            Int
+  content           String?  @db.Text
+  photos            String[] @default([])
+  tags              String[] @default([])
+  isVerifiedBooking Boolean  @default(false) @map("is_verified_booking")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id])
+
+  @@index([providerId, createdAt(sort: Desc)])
+  @@index([userId])
+  @@map("review")
+}
+
+model Favorite {
+  userId    Int      @map("user_id")
+  providerId Int     @map("provider_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user     User            @relation(fields: [userId], references: [id])
+  provider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@id([userId, providerId])
+  @@map("favorite")
+}
+
+model ContactRequest {
+  id          Int      @id @default(autoincrement())
+  providerId  Int      @map("provider_id")
+  userId      Int?     @map("user_id")
+  contactType String   @map("contact_type") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  serviceProvider ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user            User?           @relation(fields: [userId], references: [id])
+
+  @@index([providerId, createdAt(sort: Desc)])
+  @@map("contact_request")
+}
