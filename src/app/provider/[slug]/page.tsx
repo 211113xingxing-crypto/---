@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: provider.bio?.slice(0, 160) ?? '',
       type: 'profile',
     },
-    alternates: { canonical: `https://www.eldercare.local/provider/${provider.slug}` },
+    alternates: { canonical: `https://elder.navi-resources.com/provider/${provider.slug}` },
   };
 }
 
@@ -66,12 +66,12 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   }
 
   const breadcrumbItems = [
-    { name: '首页', url: 'https://www.eldercare.local' },
-    { name: '上海', url: 'https://www.eldercare.local/shanghai' },
+    { name: '首页', url: 'https://elder.navi-resources.com' },
+    { name: '上海', url: 'https://elder.navi-resources.com/shanghai' },
     ...(provider.district
-      ? [{ name: provider.district.name, url: `https://www.eldercare.local/shanghai/${provider.district.slug}` }]
+      ? [{ name: provider.district.name, url: `https://elder.navi-resources.com/shanghai/${provider.district.slug}` }]
       : []),
-    { name: provider.name, url: `https://www.eldercare.local/provider/${provider.slug}` },
+    { name: provider.name, url: `https://elder.navi-resources.com/provider/${provider.slug}` },
   ];
 
   return (

@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${districtName}${serviceType.name}服务 - 本地${serviceType.name}`,
     description: `${districtName}${serviceType.name}服务。查找${districtName}附近的${serviceType.name}护工和服务机构，附真实评价和资质信息。`,
-    alternates: { canonical: `https://www.eldercare.local/shanghai/${slug}/${subSlug}` },
+    alternates: { canonical: `https://elder.navi-resources.com/shanghai/${slug}/${subSlug}` },
   };
 }
 
@@ -48,10 +48,10 @@ export default async function DistrictServicePage({ params }: PageProps) {
   );
 
   const breadcrumbItems = [
-    { name: '首页', url: 'https://www.eldercare.local' },
-    { name: '上海', url: 'https://www.eldercare.local/shanghai' },
-    { name: districtName, url: `https://www.eldercare.local/shanghai/${slug}` },
-    { name: serviceType.name, url: `https://www.eldercare.local/shanghai/${slug}/${subSlug}` },
+    { name: '首页', url: 'https://elder.navi-resources.com' },
+    { name: '上海', url: 'https://elder.navi-resources.com/shanghai' },
+    { name: districtName, url: `https://elder.navi-resources.com/shanghai/${slug}` },
+    { name: serviceType.name, url: `https://elder.navi-resources.com/shanghai/${slug}/${subSlug}` },
   ];
 
   return (

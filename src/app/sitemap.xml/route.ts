@@ -1,5 +1,5 @@
 export async function GET() {
-  const baseUrl = 'https://www.eldercare.local';
+  const baseUrl = 'https://elder.navi-resources.com';
   const today = new Date().toISOString().split('T')[0];
 
   const staticPages = [

@@ -17,7 +17,7 @@ User-agent: Google-Extended
 Allow: /
 
 # Sitemaps
-Sitemap: https://www.eldercare.local/sitemap.xml
+Sitemap: https://elder.navi-resources.com/sitemap.xml
 `;
 
   return new Response(content, {

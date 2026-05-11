@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   description:
     "帮子女在上海本地找到经过资质核验、有真实评价的居家养老护工。覆盖上海各区，提供居家护理、陪诊服务、日间照料、术后康复等养老服务信息。",
   keywords: ["养老", "护工", "居家护理", "陪诊", "上海养老", "养老服务", "日间照料"],
-  metadataBase: new URL("https://www.eldercare.local"),
+  metadataBase: new URL("https://elder.navi-resources.com"),
   openGraph: {
     type: "website",
     locale: "zh_CN",

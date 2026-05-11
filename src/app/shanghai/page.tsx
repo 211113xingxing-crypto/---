@@ -10,12 +10,12 @@ export const metadata: Metadata = {
   title: '上海养老护工服务 - 各区居家护理、陪诊、日间照料资源汇总',
   description:
     '上海养老护工服务汇总。覆盖长宁区、静安区、徐汇区、浦东新区、虹口区、杨浦区、黄浦区、普陀区等各区居家护理、陪诊服务、日间照料、术后康复养老服务资源。',
-  alternates: { canonical: 'https://www.eldercare.local/shanghai' },
+  alternates: { canonical: 'https://elder.navi-resources.com/shanghai' },
 };
 
 const breadcrumbItems = [
-  { name: '首页', url: 'https://www.eldercare.local' },
-  { name: '上海', url: 'https://www.eldercare.local/shanghai' },
+  { name: '首页', url: 'https://elder.navi-resources.com' },
+  { name: '上海', url: 'https://elder.navi-resources.com/shanghai' },
 ];
 
 export default async function ShanghaiPage() {

@@ -34,7 +34,7 @@ function getVerifyTypeLabel(type: string): string {
 }
 
 export function ProviderSchema({ provider }: ProviderSchemaProps) {
-  const baseUrl = 'https://www.eldercare.local';
+  const baseUrl = 'https://elder.navi-resources.com';
   const variant = provider.providerType === 'individual' ? 'Person' : 'LocalBusiness';
 
   const schema: Record<string, unknown> = {
