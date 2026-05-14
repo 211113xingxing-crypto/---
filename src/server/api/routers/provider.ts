@@ -164,4 +164,21 @@ export const providerRouter = router({
     .query(async () => {
       return db.serviceType.findMany({ orderBy: { name: 'asc' } });
     }),
+
+  contact: publicProcedure
+    .input(z.object({
+      providerId: z.number(),
+      contactType: z.enum(['phone', 'wechat', 'message']),
+      message: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      await (db as any).contactRequest.create({
+        data: {
+          providerId: input.providerId,
+          userId: ctx.userId ?? null,
+          contactType: input.contactType,
+        },
+      });
+      return { success: true };
+    }),
 });

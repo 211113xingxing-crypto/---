@@ -8,13 +8,46 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Starting seed...\n');
 
-  // ── City ──
-  const shanghai = await prisma.city.upsert({
-    where: { slug: 'shanghai' },
-    update: {},
-    create: { name: '上海市', slug: 'shanghai', lat: 31.2304, lng: 121.4737 },
-  });
-  console.log(`  ✓ City: ${shanghai.name}`);
+  // ── Cities (31 provincial capitals + municipalities) ──
+  const citiesList = [
+    { name: '北京市', slug: 'beijing', lat: 39.9042, lng: 116.4074 },
+    { name: '天津市', slug: 'tianjin', lat: 39.3434, lng: 117.3616 },
+    { name: '上海市', slug: 'shanghai', lat: 31.2304, lng: 121.4737 },
+    { name: '重庆市', slug: 'chongqing', lat: 29.4316, lng: 106.9123 },
+    { name: '广州市', slug: 'guangzhou', lat: 23.1291, lng: 113.2644 },
+    { name: '成都市', slug: 'chengdu', lat: 30.5728, lng: 104.0668 },
+    { name: '武汉市', slug: 'wuhan', lat: 30.5928, lng: 114.3055 },
+    { name: '南京市', slug: 'nanjing', lat: 32.0603, lng: 118.7969 },
+    { name: '杭州市', slug: 'hangzhou', lat: 30.2741, lng: 120.1551 },
+    { name: '西安市', slug: 'xian', lat: 34.3416, lng: 108.9398 },
+    { name: '郑州市', slug: 'zhengzhou', lat: 34.7473, lng: 113.6254 },
+    { name: '济南市', slug: 'jinan', lat: 36.6512, lng: 117.1201 },
+    { name: '沈阳市', slug: 'shenyang', lat: 41.8057, lng: 123.4315 },
+    { name: '长沙市', slug: 'changsha', lat: 28.2282, lng: 112.9388 },
+    { name: '哈尔滨市', slug: 'haerbin', lat: 45.8038, lng: 126.5350 },
+    { name: '长春市', slug: 'changchun', lat: 43.8171, lng: 125.3235 },
+    { name: '石家庄市', slug: 'shijiazhuang', lat: 38.0428, lng: 114.5149 },
+    { name: '太原市', slug: 'taiyuan', lat: 37.8706, lng: 112.5489 },
+    { name: '合肥市', slug: 'hefei', lat: 31.8206, lng: 117.2272 },
+    { name: '福州市', slug: 'fuzhou', lat: 26.0745, lng: 119.2965 },
+    { name: '南昌市', slug: 'nanchang', lat: 28.6820, lng: 115.8579 },
+    { name: '昆明市', slug: 'kunming', lat: 25.0389, lng: 102.7183 },
+    { name: '贵阳市', slug: 'guiyang', lat: 26.6470, lng: 106.6302 },
+    { name: '南宁市', slug: 'nanning', lat: 22.8170, lng: 108.3665 },
+    { name: '海口市', slug: 'haikou', lat: 20.0440, lng: 110.1999 },
+    { name: '兰州市', slug: 'lanzhou', lat: 36.0611, lng: 103.8343 },
+    { name: '西宁市', slug: 'xining', lat: 36.6171, lng: 101.7785 },
+    { name: '银川市', slug: 'yinchuan', lat: 38.4872, lng: 106.2309 },
+    { name: '乌鲁木齐市', slug: 'wulumuqi', lat: 43.8256, lng: 87.6168 },
+    { name: '呼和浩特市', slug: 'huhehaote', lat: 40.8424, lng: 111.7490 },
+    { name: '拉萨市', slug: 'lasa', lat: 29.6500, lng: 91.1000 },
+  ];
+  for (const city of citiesList) {
+    await prisma.city.upsert({ where: { slug: city.slug }, update: {}, create: city });
+    console.log(`  ✓ City: ${city.name}`);
+  }
+
+  const shanghai = await prisma.city.findUniqueOrThrow({ where: { slug: 'shanghai' } });
 
   // ── Service Types ──
   const serviceTypeData = [
@@ -23,6 +56,8 @@ async function main() {
     { name: '日间照料', slug: 'rijian-zhaoliao', description: '日托服务、社区养老驿站、老年活动中心' },
     { name: '术后康复', slug: 'shuhou-kangfu', description: '术后护理、康复指导、功能训练、营养支持' },
     { name: '心理慰藉', slug: 'xinli-weijie', description: '老年陪伴、情绪疏导、认知训练' },
+    { name: '养老院', slug: 'yanglaoyuan', description: '养老院、敬老院、福利院、老年公寓等机构养老资源' },
+    { name: '临终关怀', slug: 'linzhong-guanhuai', description: '安宁疗护、临终关怀、宁养服务、疼痛管理' },
   ];
   const serviceTypes: Record<string, { id: number }> = {};
   for (const st of serviceTypeData) {
@@ -101,6 +136,74 @@ async function main() {
       });
     }
     console.log(`  ✓ Sub-districts for ${dSlug}: ${subNames.length}`);
+  }
+
+  // ── Key City Districts (Beijing, Guangzhou, Chengdu, Hangzhou, Wuhan) ──
+  const keyCityDistricts: Record<string, { name: string; slug: string; lat: number; lng: number }[]> = {
+    beijing: [
+      { name: '东城区', slug: 'dongcheng-qu', lat: 39.9289, lng: 116.4164 },
+      { name: '西城区', slug: 'xicheng-qu', lat: 39.9123, lng: 116.3659 },
+      { name: '朝阳区', slug: 'chaoyang-qu', lat: 39.9215, lng: 116.4434 },
+      { name: '海淀区', slug: 'haidian-qu', lat: 39.9598, lng: 116.2982 },
+      { name: '丰台区', slug: 'fengtai-qu', lat: 39.8585, lng: 116.2870 },
+      { name: '石景山区', slug: 'shijingshan-qu', lat: 39.9057, lng: 116.2229 },
+      { name: '通州区', slug: 'tongzhou-qu', lat: 39.9021, lng: 116.6572 },
+      { name: '大兴区', slug: 'daxing-qu', lat: 39.7268, lng: 116.3386 },
+      { name: '昌平区', slug: 'changping-qu', lat: 40.2206, lng: 116.2312 },
+      { name: '顺义区', slug: 'shunyi-qu', lat: 40.1302, lng: 116.6544 },
+    ],
+    guangzhou: [
+      { name: '天河区', slug: 'tianhe-qu', lat: 23.1247, lng: 113.3612 },
+      { name: '越秀区', slug: 'yuexiu-qu', lat: 23.1286, lng: 113.2668 },
+      { name: '海珠区', slug: 'haizhu-qu', lat: 23.0833, lng: 113.3172 },
+      { name: '荔湾区', slug: 'liwan-qu', lat: 23.1257, lng: 113.2439 },
+      { name: '白云区', slug: 'baiyun-qu', lat: 23.1574, lng: 113.2732 },
+      { name: '番禺区', slug: 'panyu-qu', lat: 22.9378, lng: 113.3844 },
+      { name: '黄埔区', slug: 'huangpu-qu', lat: 23.1064, lng: 113.4597 },
+      { name: '花都区', slug: 'huadu-qu', lat: 23.4039, lng: 113.2203 },
+    ],
+    chengdu: [
+      { name: '锦江区', slug: 'jinjiang-qu', lat: 30.6558, lng: 104.0837 },
+      { name: '青羊区', slug: 'qingyang-qu', lat: 30.6744, lng: 104.0613 },
+      { name: '金牛区', slug: 'jinniu-qu', lat: 30.6912, lng: 104.0527 },
+      { name: '武侯区', slug: 'wuhou-qu', lat: 30.6419, lng: 104.0433 },
+      { name: '成华区', slug: 'chenghua-qu', lat: 30.6601, lng: 104.1019 },
+      { name: '高新区', slug: 'gaoxin-qu', lat: 30.5965, lng: 104.0547 },
+      { name: '双流区', slug: 'shuangliu-qu', lat: 30.5745, lng: 103.9238 },
+      { name: '龙泉驿区', slug: 'longquanyi-qu', lat: 30.5565, lng: 104.2749 },
+    ],
+    hangzhou: [
+      { name: '上城区', slug: 'shangcheng-qu', lat: 30.2426, lng: 120.1692 },
+      { name: '拱墅区', slug: 'gongshu-qu', lat: 30.3191, lng: 120.1414 },
+      { name: '西湖区', slug: 'xihu-qu', lat: 30.2597, lng: 120.1302 },
+      { name: '滨江区', slug: 'binjiang-qu', lat: 30.2086, lng: 120.2121 },
+      { name: '萧山区', slug: 'xiaoshan-qu', lat: 30.1853, lng: 120.2646 },
+      { name: '余杭区', slug: 'yuhang-qu', lat: 30.4190, lng: 120.2993 },
+      { name: '临平区', slug: 'linping-qu', lat: 30.4212, lng: 120.2990 },
+    ],
+    wuhan: [
+      { name: '武昌区', slug: 'wuchang-qu', lat: 30.5539, lng: 114.3159 },
+      { name: '江岸区', slug: 'jiangan-qu', lat: 30.5992, lng: 114.3091 },
+      { name: '江汉区', slug: 'jianghan-qu', lat: 30.6014, lng: 114.2707 },
+      { name: '洪山区', slug: 'hongshan-qu', lat: 30.5002, lng: 114.3436 },
+      { name: '汉阳区', slug: 'hanyang-qu', lat: 30.5547, lng: 114.2181 },
+      { name: '青山区', slug: 'qingshan-qu', lat: 30.6401, lng: 114.3855 },
+      { name: '硚口区', slug: 'qiaokou-qu', lat: 30.5816, lng: 114.2148 },
+      { name: '东西湖区', slug: 'dongxihu-qu', lat: 30.6200, lng: 114.1370 },
+    ],
+  };
+
+  for (const [citySlug, districtList] of Object.entries(keyCityDistricts)) {
+    const city = await prisma.city.findUnique({ where: { slug: citySlug } });
+    if (!city) continue;
+    for (const d of districtList) {
+      await prisma.district.upsert({
+        where: { cityId_slug: { cityId: city.id, slug: d.slug } },
+        update: {},
+        create: { ...d, level: 'district', cityId: city.id },
+      });
+    }
+    console.log(`  ✓ ${city.name} districts: ${districtList.length}`);
   }
 
   // ── Seed Providers ──

@@ -115,3 +115,58 @@ export async function getProviderById(id: number) {
     },
   });
 }
+
+export async function getProviderGrowth() {
+  const providers = await db.serviceProvider.findMany({
+    select: { createdAt: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  const byMonth: Record<string, number> = {};
+  providers.forEach(p => {
+    const key = p.createdAt.toISOString().slice(0, 7);
+    byMonth[key] = (byMonth[key] || 0) + 1;
+  });
+  const months = Object.keys(byMonth).sort();
+  let cumulative = 0;
+  return months.slice(-12).map(m => {
+    cumulative += byMonth[m];
+    return { month: m, new: byMonth[m], total: cumulative };
+  });
+}
+
+export async function getCityDistribution() {
+  const rows = await db.serviceProvider.groupBy({
+    by: ['cityId'],
+    _count: { id: true },
+    where: { status: 'active' },
+  });
+  const cities = await db.city.findMany({
+    where: { id: { in: rows.map(r => r.cityId) } },
+    select: { id: true, name: true },
+  });
+  return rows.map(r => ({
+    cityName: cities.find(c => c.id === r.cityId)?.name?.replace('市', '') ?? 'Unknown',
+    count: r._count.id,
+  })).sort((a, b) => b.count - a.count).slice(0, 10);
+}
+
+export async function getAllProvidersForExport() {
+  return db.serviceProvider.findMany({
+    select: {
+      id: true,
+      name: true,
+      providerType: true,
+      status: true,
+      avgRating: true,
+      reviewCount: true,
+      createdAt: true,
+      city: { select: { name: true } },
+      district: { select: { name: true } },
+      listings: {
+        select: { serviceType: { select: { name: true } } },
+        where: { isActive: true },
+      },
+    },
+    orderBy: { id: 'asc' },
+  });
+}

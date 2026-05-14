@@ -192,8 +192,39 @@ ALTER TABLE "contact_request" ADD CONSTRAINT "cr_user_fkey" FOREIGN KEY ("user_i
 
 -- ====== SEED DATA ======
 
--- City
-INSERT INTO "city" ("name", "slug", "lat", "lng") VALUES ('上海市', 'shanghai', 31.2304, 121.4737);
+-- Cities (31 provincial capitals + municipalities)
+INSERT INTO "city" ("name", "slug", "lat", "lng") VALUES
+  ('北京市', 'beijing', 39.9042, 116.4074),
+  ('天津市', 'tianjin', 39.3434, 117.3616),
+  ('上海市', 'shanghai', 31.2304, 121.4737),
+  ('重庆市', 'chongqing', 29.4316, 106.9123),
+  ('广州市', 'guangzhou', 23.1291, 113.2644),
+  ('成都市', 'chengdu', 30.5728, 104.0668),
+  ('武汉市', 'wuhan', 30.5928, 114.3055),
+  ('南京市', 'nanjing', 32.0603, 118.7969),
+  ('杭州市', 'hangzhou', 30.2741, 120.1551),
+  ('西安市', 'xian', 34.3416, 108.9398),
+  ('郑州市', 'zhengzhou', 34.7473, 113.6254),
+  ('济南市', 'jinan', 36.6512, 117.1201),
+  ('沈阳市', 'shenyang', 41.8057, 123.4315),
+  ('长沙市', 'changsha', 28.2282, 112.9388),
+  ('哈尔滨市', 'haerbin', 45.8038, 126.5350),
+  ('长春市', 'changchun', 43.8171, 125.3235),
+  ('石家庄市', 'shijiazhuang', 38.0428, 114.5149),
+  ('太原市', 'taiyuan', 37.8706, 112.5489),
+  ('合肥市', 'hefei', 31.8206, 117.2272),
+  ('福州市', 'fuzhou', 26.0745, 119.2965),
+  ('南昌市', 'nanchang', 28.6820, 115.8579),
+  ('昆明市', 'kunming', 25.0389, 102.7183),
+  ('贵阳市', 'guiyang', 26.6470, 106.6302),
+  ('南宁市', 'nanning', 22.8170, 108.3665),
+  ('海口市', 'haikou', 20.0440, 110.1999),
+  ('兰州市', 'lanzhou', 36.0611, 103.8343),
+  ('西宁市', 'xining', 36.6171, 101.7785),
+  ('银川市', 'yinchuan', 38.4872, 106.2309),
+  ('乌鲁木齐市', 'wulumuqi', 43.8256, 87.6168),
+  ('呼和浩特市', 'huhehaote', 40.8424, 111.7490),
+  ('拉萨市', 'lasa', 29.6500, 91.1000);
 
 -- Service Types
 INSERT INTO "service_type" ("name", "slug", "description") VALUES
@@ -201,7 +232,9 @@ INSERT INTO "service_type" ("name", "slug", "description") VALUES
   ('陪诊服务', 'peizhen', '医院陪诊、代取药、检查陪同、病历整理'),
   ('日间照料', 'rijian-zhaoliao', '日托服务、社区养老驿站、老年活动中心'),
   ('术后康复', 'shuhou-kangfu', '术后护理、康复指导、功能训练、营养支持'),
-  ('心理慰藉', 'xinli-weijie', '老年陪伴、情绪疏导、认知训练');
+  ('心理慰藉', 'xinli-weijie', '老年陪伴、情绪疏导、认知训练'),
+  ('养老院', 'yanglaoyuan', '养老院、敬老院、福利院、老年公寓等机构养老资源'),
+  ('临终关怀', 'linzhong-guanhuai', '安宁疗护、临终关怀、宁养服务、疼痛管理');
 
 -- Districts (16)
 DO $$

@@ -1,3 +1,5 @@
+import { BASE_URL } from '@/lib/env';
+
 interface ProviderSchemaProps {
   provider: {
     name: string;
@@ -34,21 +36,33 @@ function getVerifyTypeLabel(type: string): string {
 }
 
 export function ProviderSchema({ provider }: ProviderSchemaProps) {
-  const baseUrl = 'https://elder.navi-resources.com';
   const variant = provider.providerType === 'individual' ? 'Person' : 'LocalBusiness';
 
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': variant,
     name: provider.name,
-    url: `${baseUrl}/provider/${provider.slug}`,
+    url: `${BASE_URL}/provider/${provider.slug}`,
     description:
       provider.bio ||
       `${provider.name}，${provider.providerType === 'individual' ? '个人养老护工' : '专业养老护理机构'}。评分${provider.avgRating.toFixed(1)}，${provider.reviewCount}条评价。`,
-    image: `${baseUrl}/api/og/provider/${provider.slug}`,
+    image: `${BASE_URL}/api/og/provider/${provider.slug}`,
+    dateModified: '2026-05-12',
+    areaServed: {
+      '@type': provider.city?.name ? 'City' : 'Country',
+      name: provider.city?.name ?? '中国',
+      ...(provider.city?.name
+        ? {
+            containedInPlace: {
+              '@type': 'Country',
+              name: '中国',
+            },
+          }
+        : {}),
+    },
     address: {
       '@type': 'PostalAddress',
-      addressLocality: provider.city?.name ?? '上海市',
+      addressLocality: provider.city?.name ?? '',
       addressRegion: provider.district?.name ?? '',
       addressCountry: 'CN',
     },
@@ -62,7 +76,6 @@ export function ProviderSchema({ provider }: ProviderSchemaProps) {
       : {}),
   };
 
-  // Aggregate rating
   if (provider.reviewCount > 0) {
     schema.aggregateRating = {
       '@type': 'AggregateRating',
@@ -72,16 +85,15 @@ export function ProviderSchema({ provider }: ProviderSchemaProps) {
     };
   }
 
-  // Services
   if (provider.listings.length > 0) {
-    schema.makesOffer = provider.listings.map((l) => ({
-      '@type': 'Service',
+    const services = provider.listings.map((l) => ({
+      '@type': 'Service' as const,
       name: l.title,
       description: l.description ?? `${l.serviceType.name}服务`,
       ...(l.price
         ? {
             offers: {
-              '@type': 'Offer',
+              '@type': 'Offer' as const,
               price: l.price,
               priceCurrency: 'CNY',
               ...(l.priceUnit ? { unitText: l.priceUnit } : {}),
@@ -89,20 +101,26 @@ export function ProviderSchema({ provider }: ProviderSchemaProps) {
           }
         : {}),
       areaServed: {
-        '@type': 'City',
-        name: provider.city?.name ?? '上海市',
+        '@type': 'City' as const,
+        name: provider.city?.name ?? '',
       },
     }));
+
+    schema.makesOffer = services;
+    schema.hasOfferCatalog = {
+      '@type': 'OfferCatalog',
+      name: `${provider.name}服务目录`,
+      itemListElement: services,
+    };
   }
 
-  // Credentials
   if (provider.verifications.length > 0) {
     schema.hasCredential = provider.verifications.map((v) => ({
       '@type': 'EducationalOccupationalCredential',
       credentialCategory: getVerifyTypeLabel(v.verifyType),
       recognizedBy: {
         '@type': 'Organization',
-        name: '上海市人力资源和社会保障局',
+        name: '人力资源和社会保障局',
       },
     }));
   }

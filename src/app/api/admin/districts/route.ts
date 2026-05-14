@@ -3,7 +3,7 @@ import { db } from '@/server/db';
 
 export async function GET() {
   try {
-    const city = await db.city.findUnique({ where: { slug: 'shanghai' } });
+    const city = await db.city.findFirst({ where: { isActive: true }, orderBy: { id: 'asc' } });
     if (!city) {
       return NextResponse.json({ data: [] });
     }

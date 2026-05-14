@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Star, ShieldCheck, Phone, MapPin } from 'lucide-react';
+import { FavoriteButton } from './favorite-button';
 
 interface ProviderCardProps {
   provider: {
@@ -49,12 +50,12 @@ export function ProviderCard({ provider }: ProviderCardProps) {
   return (
     <Link
       href={`/provider/${provider.slug}`}
-      className="block bg-white rounded-lg border border-zinc-200 p-5 hover:border-emerald-300 hover:shadow-md transition-all"
+      className="block bg-white rounded-lg border border-zinc-200 p-5 shadow-sm hover:border-emerald-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 motion-reduce:transition-none"
     >
       <div className="flex items-start justify-between mb-3">
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-zinc-900">{provider.name}</h3>
+            <h3 className="font-semibold text-zinc-900 truncate">{provider.name}</h3>
             {provider.verified && (
               <ShieldCheck className="w-4 h-4 text-emerald-600" aria-label="已认证" />
             )}
@@ -64,12 +65,15 @@ export function ProviderCard({ provider }: ProviderCardProps) {
             {provider.yearsExperience && ` · ${provider.yearsExperience}年经验`}
           </p>
         </div>
-        <div className="flex items-center gap-1 text-amber-500">
-          <Star className="w-4 h-4 fill-current" />
+        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+          <FavoriteButton providerId={provider.id} />
+          <div className="flex items-center gap-1 text-amber-500">
+            <Star className="w-4 h-4 fill-current" />
           <span className="font-medium text-zinc-900 text-sm">{ratingDisplay}</span>
           {provider.reviewCount > 0 && (
             <span className="text-xs text-zinc-400">({provider.reviewCount})</span>
           )}
+          </div>
         </div>
       </div>
 
@@ -101,7 +105,7 @@ export function ProviderCard({ provider }: ProviderCardProps) {
       <div className="flex items-center justify-between text-xs text-zinc-400">
         <span className="flex items-center gap-1">
           <MapPin className="w-3 h-3" />
-          {provider.district?.name ?? provider.addressText ?? '上海市'}
+          {provider.district?.name ?? (provider.addressText || '地址待完善')}
         </span>
         <span className="flex items-center gap-1 text-emerald-600">
           <Phone className="w-3 h-3" />

@@ -5,7 +5,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const city = await db.city.findUnique({ where: { slug: 'shanghai' } });
+    const city = await db.city.findFirst({ where: { isActive: true }, orderBy: { id: 'asc' } });
     if (!city) {
       return NextResponse.json({ error: 'City not found — run seed first' }, { status: 400 });
     }

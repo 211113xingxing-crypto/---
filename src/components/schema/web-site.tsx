@@ -1,15 +1,18 @@
+import { BASE_URL } from '@/lib/env';
+
 export function WebSiteSchema() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: '养老本地服务',
-    url: 'https://elder.navi-resources.com',
-    description: '帮子女在上海本地找到经过资质核验、有真实评价的居家养老护工。',
+    name: '亲护',
+    url: BASE_URL,
+    description: '帮子女在身边找到经过资质核验、有真实评价的居家养老护工。覆盖全国31个省市。',
+    dateModified: '2026-05-12',
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: 'https://elder.navi-resources.com/search?q={search_term_string}&city=shanghai',
+        urlTemplate: `${BASE_URL}/search?q={search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
     },
@@ -27,13 +30,16 @@ export function OrganizationSchema() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: '养老本地服务',
-    url: 'https://elder.navi-resources.com',
-    description: '专注养老本地服务发现，帮子女找到身边靠谱的养老服务。',
+    name: '亲护',
+    alternateName: ['亲护平台', '亲护', 'Elder Care Local Service'],
+    url: BASE_URL,
+    description: '帮子女在身边找到经过资质核验、有真实评价的居家养老护工。',
+    dateModified: '2026-05-12',
     areaServed: {
-      '@type': 'City',
-      name: '上海市',
+      '@type': 'Country',
+      name: '中国',
     },
+    sameAs: [],
   };
 
   return (

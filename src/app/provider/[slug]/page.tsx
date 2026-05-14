@@ -3,10 +3,21 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { BreadcrumbSchema } from '@/components/schema/breadcrumb';
 import { ProviderSchema } from '@/components/schema/provider-schema';
-import { getProviderBySlug, getReviews } from '@/lib/data';
-import { Star, ShieldCheck, Phone, MapPin, Clock, Award, MessageCircle } from 'lucide-react';
+import { WeChatModal } from '@/components/wechat-modal';
+import { ShareButton } from '@/components/share-button';
+import { ProviderCta } from '@/components/provider-cta';
+import { MobileCta } from '@/components/mobile-cta';
+import { FavoriteButton } from '@/components/favorite-button';
+import { ReviewForm } from '@/components/review-form';
+import { FaqSchema } from '@/components/schema/faq-schema';
+import { ReviewSchema } from '@/components/schema/review-schema';
+import { buildProviderFaq } from '@/lib/schema-helpers';
+import { getProviderBySlug, getReviews, getSimilarProviders } from '@/lib/data';
+import { BASE_URL } from '@/lib/env';
+import { Star, ShieldCheck, Phone, MapPin, Clock, Award } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -18,17 +29,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!provider) return { title: '服务者未找到' };
 
   const serviceNames = provider.listings.map((l) => l.serviceType.name).join('、');
-  const districtName = provider.district?.name ?? '上海';
+  const districtName = provider.district?.name ?? provider.city?.name ?? '';
 
   return {
     title: `${provider.name} - ${districtName}${serviceNames} | 评分${provider.avgRating}`,
     description: `${provider.name}，${provider.yearsExperience ? `${provider.yearsExperience}年经验，` : ''}评分${provider.avgRating}（${provider.reviewCount}条评价）。提供${serviceNames}。服务${districtName}。${provider.phone ? `电话：${provider.phone}` : ''}`,
     openGraph: {
-      title: `${provider.name} | 养老本地服务`,
+      title: `${provider.name} | 亲护`,
       description: provider.bio?.slice(0, 160) ?? '',
       type: 'profile',
+      images: [{ url: `/api/og/provider/${provider.slug}`, width: 1200, height: 630 }],
     },
-    alternates: { canonical: `https://elder.navi-resources.com/provider/${provider.slug}` },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${provider.name} | 亲护`,
+      description: provider.bio?.slice(0, 160) ?? '',
+      images: [{ url: `/api/og/provider/${provider.slug}`, width: 1200, height: 630 }],
+    },
+    alternates: { canonical: `${BASE_URL}/provider/${provider.slug}` },
   };
 }
 
@@ -58,6 +76,12 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   if (!provider) notFound();
 
   const reviews = await getReviews(provider.id);
+  const similarProviders = await getSimilarProviders(
+    provider.id,
+    provider.city!.id,
+    provider.district?.id ?? null,
+    4,
+  );
   const ratingDist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   for (const r of reviews) {
     if (r.rating >= 1 && r.rating <= 5) {
@@ -66,50 +90,76 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   }
 
   const breadcrumbItems = [
-    { name: '首页', url: 'https://elder.navi-resources.com' },
-    { name: '上海', url: 'https://elder.navi-resources.com/shanghai' },
-    ...(provider.district
-      ? [{ name: provider.district.name, url: `https://elder.navi-resources.com/shanghai/${provider.district.slug}` }]
+    { label: '首页', href: BASE_URL },
+    ...(provider.city
+      ? [{ label: provider.city.name, href: `${BASE_URL}/${provider.city.slug}` }]
       : []),
-    { name: provider.name, url: `https://elder.navi-resources.com/provider/${provider.slug}` },
+    ...(provider.district && provider.city
+      ? [{ label: provider.district.name, href: `${BASE_URL}/${provider.city.slug}/${provider.district.slug}` }]
+      : []),
+    { label: provider.name, href: `${BASE_URL}/provider/${provider.slug}` },
   ];
 
   return (
     <>
       <BreadcrumbSchema items={breadcrumbItems} />
       <ProviderSchema provider={provider} />
-      <Header />
+      <ReviewSchema
+        reviews={reviews.map(r => ({
+          id: r.id,
+          rating: r.rating,
+          content: r.content,
+          authorName: r.user.nickname,
+          datePublished: r.createdAt,
+        }))}
+        aggregate={{
+          ratingValue: provider.avgRating,
+          reviewCount: provider.reviewCount,
+        }}
+        itemReviewed={{
+          name: provider.name,
+          url: `${BASE_URL}/provider/${provider.slug}`,
+        }}
+      />
+      <FaqSchema qaList={buildProviderFaq(provider)} />
+      <Header citySlug={provider.city?.slug} cityName={provider.city?.name} />
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-4 py-8" id="main-content">
         {/* Breadcrumb */}
-        <nav className="text-sm text-zinc-500 mb-6">
-          <Link href="/" className="hover:text-emerald-700">首页</Link>
-          <span className="mx-2">/</span>
-          <Link href="/shanghai" className="hover:text-emerald-700">上海</Link>
-          {provider.district && (
-            <>
-              <span className="mx-2">/</span>
-              <Link href={`/shanghai/${provider.district.slug}`} className="hover:text-emerald-700">
-                {provider.district.name}
-              </Link>
-            </>
-          )}
-          <span className="mx-2">/</span>
-          <span className="text-zinc-900">{provider.name}</span>
-        </nav>
+        <Breadcrumbs items={breadcrumbItems} />
+
+        {/* GEO summary */}
+        <div className="bg-emerald-50/50 border border-emerald-200 rounded-lg p-4 mb-4 text-sm text-zinc-700">
+          <p>
+            <strong>{provider.name}</strong>
+            {provider.providerType === 'individual' ? ' — 个人养老护工，' : ' — 专业养老护理机构，'}
+            {provider.yearsExperience && <>{provider.yearsExperience}年服务经验，</>}
+            评分<strong className="text-emerald-700">{provider.avgRating.toFixed(1)}</strong>（{provider.reviewCount}条真实评价）。
+            {provider.verified && ' 已通过身份证+资格证+健康证三重核验。'}
+            {provider.district && <> 服务区域：{provider.district.name}。</>}
+            {provider.listings.length > 0 && <> 提供{provider.listings.map(l => l.serviceType.name).join('、')}等服务。</>}
+          </p>
+        </div>
 
         {/* Header */}
         <div className="bg-white border border-zinc-200 rounded-lg p-6 mb-6">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-zinc-900">{provider.name}</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold text-zinc-900">{provider.name}</h1>
+                  <FavoriteButton providerId={provider.id} showLabel />
+                </div>
                 {provider.verified && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full font-medium">
                     <ShieldCheck className="w-3 h-3" />
                     已认证
                   </span>
                 )}
+                <ShareButton
+                  title={`${provider.name} - ${provider.district?.name ?? provider.city?.name ?? ''}养老护工`}
+                  url={`${BASE_URL}/provider/${provider.slug}`}
+                />
               </div>
               <p className="text-zinc-500 text-sm">
                 {provider.providerType === 'individual' ? '个人护工' : '护理机构'}
@@ -137,24 +187,15 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex gap-3 mt-5">
-            {provider.phone && (
-              <a
-                href={`tel:${provider.phone.replace(/\*/g, '')}`}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
-              >
-                <Phone className="w-4 h-4" />
-                拨打电话
-              </a>
-            )}
-            {provider.wechatId && (
-              <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-50 text-green-700 border border-green-200 rounded-lg font-medium hover:bg-green-100 transition-colors">
-                <MessageCircle className="w-4 h-4" />
-                微信联系
-              </button>
-            )}
-          </div>
+          <ProviderCta
+            providerId={provider.id}
+            providerName={provider.name}
+            phone={provider.phone}
+            wechatId={provider.wechatId}
+          />
         </div>
+
+        <MobileCta phone={provider.phone} wechatId={provider.wechatId} />
 
         {/* Bio & Details */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -234,6 +275,11 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 </div>
               </div>
 
+              {/* Review form */}
+              <div className="mb-6 pb-6 border-b">
+                <ReviewForm providerSlug={provider.slug} />
+              </div>
+
               {/* Review list */}
               <div className="space-y-5">
                 {reviews.map((review) => (
@@ -280,35 +326,16 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <section className="bg-white border border-zinc-200 rounded-lg p-6">
               <h2 className="font-semibold text-zinc-900 mb-4">常见问题</h2>
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-zinc-900">
-                    Q: {provider.name}的服务区域是哪里？
-                  </h3>
-                  <p className="text-sm text-zinc-600 mt-1">
-                    A: {provider.name}主要在{provider.addressText}提供服务
-                    {provider.district ? `，覆盖${provider.district.name}及周边区域` : ''}。
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-zinc-900">
-                    Q: {provider.name}有哪些资质证书？
-                  </h3>
-                  <p className="text-sm text-zinc-600 mt-1">
-                    A: {provider.verifications.length > 0
-                      ? `持有${provider.verifications.map(v => verifyLabel(v.verifyType)).join('、')}。`
-                      : '资质信息请联系确认。'}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-zinc-900">
-                    Q: {provider.name}的收费标准是怎样的？
-                  </h3>
-                  <p className="text-sm text-zinc-600 mt-1">
-                    A: {provider.listings.map(l =>
-                      `${l.title}${l.price ? `${priceDisplay(l.price, l.priceUnit)}` : '价格面议'}`
-                    ).join('；')}。建议直接联系确认最新价格和档期。
-                  </p>
-                </div>
+                {buildProviderFaq(provider).map((faq, i) => (
+                  <div key={i}>
+                    <h3 className="text-sm font-medium text-zinc-900">
+                      Q: {faq.question}
+                    </h3>
+                    <p className="text-sm text-zinc-600 mt-1">
+                      A: {faq.answer}
+                    </p>
+                  </div>
+                ))}
               </div>
             </section>
           </div>
@@ -339,15 +366,18 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <div className="bg-white border border-zinc-200 rounded-lg p-5">
               <h3 className="font-semibold text-zinc-900 mb-3">服务类型</h3>
               <div className="flex flex-wrap gap-2">
-                {provider.serviceTypes.map((st, i) => (
-                  <Link
-                    key={i}
-                    href={`/shanghai/${st.serviceType.slug}`}
-                    className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-sm rounded-full hover:bg-emerald-100 transition-colors"
-                  >
-                    {st.serviceType.name}
-                  </Link>
-                ))}
+                {provider.serviceTypes.map((st, i) => {
+                  const cityPath = provider.city?.slug ? `/${provider.city.slug}` : '';
+                  return (
+                    <Link
+                      key={i}
+                      href={cityPath ? `${cityPath}/${st.serviceType.slug}` : `/search?type=${encodeURIComponent(st.serviceType.slug)}`}
+                      className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-sm rounded-full hover:bg-emerald-100 transition-colors"
+                    >
+                      {st.serviceType.name}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
@@ -373,7 +403,43 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         </div>
       </main>
 
-      <Footer />
+      {/* Similar Providers */}
+      {similarProviders.length > 0 && (
+        <section className="bg-white border border-zinc-200 rounded-lg p-6 mb-8">
+          <h2 className="font-semibold text-zinc-900 mb-4">
+            {provider.district
+              ? `${provider.district.name}附近的其他护工`
+              : '同城推荐'}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {similarProviders.map((sp) => (
+              <Link
+                key={sp.id}
+                href={`/provider/${sp.slug}`}
+                className="block p-4 border border-zinc-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50/30 transition-all"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-sm text-zinc-900 truncate">{sp.name}</span>
+                  {sp.verified && (
+                    <ShieldCheck className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-zinc-500 mb-1">
+                  <Star className="w-3 h-3 text-amber-500 fill-current" />
+                  <span>{sp.avgRating.toFixed(1)}</span>
+                  <span className="text-zinc-300">({sp.reviewCount})</span>
+                </div>
+                <p className="text-xs text-zinc-400 truncate">
+                  {sp.district?.name ?? sp.city?.name}
+                  {sp.yearsExperience ? ` · ${sp.yearsExperience}年经验` : ''}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <Footer citySlug={provider.city?.slug} cityName={provider.city?.name} />
     </>
   );
 }

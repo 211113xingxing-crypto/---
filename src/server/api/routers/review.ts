@@ -1,5 +1,6 @@
 import { router, publicProcedure } from '@/server/trpc/init';
 import { db } from '@/server/db';
+import { signToken } from '@/lib/auth';
 import { z } from 'zod';
 
 export const reviewRouter = router({
@@ -49,28 +50,41 @@ export const reviewRouter = router({
       z.object({
         providerSlug: z.string(),
         rating: z.number().min(1).max(5),
-        content: z.string().optional(),
+        content: z.string().min(1).max(2000).optional(),
         tags: z.array(z.string()).default([]),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const provider = await db.serviceProvider.findUnique({
         where: { slug: input.providerSlug },
         select: { id: true },
       });
       if (!provider) throw new Error('Provider not found');
 
+      let userId = ctx.userId;
+
+      if (!userId) {
+        const user = await db.user.create({
+          data: { nickname: `用户${Date.now().toString(36).slice(-6)}` },
+        });
+        userId = user.id;
+        const token = signToken(userId);
+        ctx.resHeaders.set(
+          'Set-Cookie',
+          `token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${365 * 24 * 60 * 60}`
+        );
+      }
+
       const review = await db.review.create({
         data: {
           providerId: provider.id,
-          userId: 1, // TODO: replace with real user auth
+          userId,
           rating: input.rating,
           content: input.content,
           tags: input.tags,
         },
       });
 
-      // Update aggregate rating
       const agg = await db.review.aggregate({
         where: { providerId: provider.id },
         _avg: { rating: true },
